@@ -5,12 +5,11 @@
  date  : 8 April 2014
 """
 
+from __future__ import print_function
+import json
+import pymysql
 import requests
 import sys
-import pymysql
-import pprintpp
-import json
-from __future__ import print_function
 
 # ----------------------------------------------------------------------
 def main():
@@ -22,10 +21,10 @@ def main():
     )
 
     pdb = pymysql.connect(
-        host='127.0.0.1', 
-        port=3306, 
-        user='kclark', 
-        passwd='', 
+        host='127.0.0.1',
+        port=3306,
+        user='kclark',
+        passwd='',
         db='pubchase'
     )
 
@@ -37,9 +36,6 @@ def main():
         url = url_tmpl % page
         req = requests.get(url)
         data = req.json()
-
-        #jfile = open('pubpeer.json', 'r')
-        #data = json.loads(jfile.read())
 
         if not data.has_key('publications'):
             num_bad += 1
@@ -62,15 +58,12 @@ def main():
             if not ret:
                 num_bad += 1
 
-            print('%3d: %s (%s) => %s' % ( 
-                num_processed, 
-                pub['pubpeer_id'], 
-                pub['comments_count'], 
+            print('%3d: %s (%s) => %s' % (
+                num_processed,
+                pub['pubpeer_id'],
+                pub['comments_count'],
                 'ok' if ret else 'bad'
             ))
-
-        #if page == 1:
-        #   break 
 
     pdb.close()
     print('Done, processed %s, %s were bad, ratio: %d%%.' % (
@@ -87,12 +80,12 @@ def update(pub, pdb):
     comments = pub['comments']
 
     if (
-        not pub['pubpeer_id'] 
-        or pub['comments_count'] < 1 
+        not pub['pubpeer_id']
+        or pub['comments_count'] < 1
         or len(comments) == 0
     ):
         return False
-    
+
     cur = pdb.cursor()
     cur.execute(
         """
@@ -127,11 +120,11 @@ def update(pub, pdb):
                 values ( %s, %s, %s, %s, %s, %s )
                 """,
                 (
-                    pmid, 
-                    pub['doi'], 
-                    pub['comments_count'], 
+                    pmid,
+                    pub['doi'],
+                    pub['comments_count'],
                     pub['pubpeer_id'],
-                    pub['link'], 
+                    pub['link'],
                     json.dumps(pub['comments'], indent=0)
                 )
             )
@@ -142,7 +135,7 @@ def update(pub, pdb):
     return True
 
 # ----------------------------------------------------------------------
-def get_pm_id (doi, db):
+def get_pm_id(doi, pdb):
     """converts DOI to pubmed id"""
 
     pm_url = (
@@ -152,41 +145,41 @@ def get_pm_id (doi, db):
 
     ret = 0
     if doi:
-        url = pm_url % doi;
+        url = pm_url % doi
         req = requests.get(url)
         data = req.json()
         error = ''
 
         if not data.has_key('records'):
-            error='no data from "%s"' % (url)
+            error = 'no data from "%s"' % (url)
         else:
             for rec in data['records']:
                 if rec.has_key('pmid'):
-                    ret = rec['pmid'];
+                    ret = rec['pmid']
                     break
                 elif rec.has_key('errmsg'):
-                    error=rec['errmsg']
+                    error = rec['errmsg']
                     break
 
     if not ret > 0:
         print(
-            'Error getting PMID for "%s": %s' % 
+            'Error getting PMID for "%s": %s' %
             (doi, error if error else 'unknown error'),
              file=sys.stderr
         )
 
-        cur = db.cursor()
+        cur = pdb.cursor()
         cur.execute(
             """
             replace
-            into   pubpeer_bad_doi (doi) 
+            into   pubpeer_bad_doi (doi)
             values (%s)
             """,
             (doi)
         )
-        db.commit()
+        pdb.commit()
 
-    return ret;
+    return ret
 
 # ----------------------------------------------------------------------
 main()
