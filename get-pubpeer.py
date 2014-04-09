@@ -30,7 +30,9 @@ def main():
 
     num_processed = 0
     num_bad = 0
-    for page in range(1, 40):
+    page = 0
+    while 1:
+        page += 1
         print('Getting page %s' % page)
 
         url = url_tmpl % page
@@ -43,8 +45,10 @@ def main():
 
         pubs = data['publications']
 
+        # assume we've reached the highest page
         if len(pubs) == 0:
-            continue
+            print('No more publications, quitting.');
+            break
 
         for pub in pubs:
             num_processed += 1
