@@ -31,7 +31,7 @@ def main():
     num_processed = 0
     num_bad = 0
     page = 0
-    while 1:
+    while True:
         page += 1
         print('Getting page %s' % page)
 
@@ -70,11 +70,13 @@ def main():
             ))
 
     pdb.close()
+
     print('Done, processed %s, %s were bad, ratio: %d%%.' % (
         num_processed,
         num_bad,
         (num_bad * 100 /num_processed) if num_bad > 0 else 0,
     ))
+
     sys.exit(0)
 
 # ----------------------------------------------------------------------
@@ -147,6 +149,11 @@ def get_pm_id(doi, pdb):
         'format=json&ids=%s'
     )
 
+    pm_url_backup = ( 
+        'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?'
+        'db=pubmed&retmode=json&term=%s'
+    )
+
     ret = 0
     if doi:
         url = pm_url % doi
@@ -154,9 +161,7 @@ def get_pm_id(doi, pdb):
         data = req.json()
         error = ''
 
-        if not data.has_key('records'):
-            error = 'no data from "%s"' % (url)
-        else:
+        if data.has_key('records'):
             for rec in data['records']:
                 if rec.has_key('pmid'):
                     ret = rec['pmid']
@@ -164,6 +169,17 @@ def get_pm_id(doi, pdb):
                 elif rec.has_key('errmsg'):
                     error = rec['errmsg']
                     break
+
+        if not ret > 0:
+            url = pm_url_backup % doi
+            req = requests.get(url)
+            data = req.json()
+
+            if (
+                data.has_key('esearchresult') 
+                and int(data['esearchresult']['count']) == 1
+            ):
+                ret = data['esearchresult']['idlist'][0]
 
     if not ret > 0:
         print(
