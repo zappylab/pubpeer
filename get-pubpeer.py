@@ -6,6 +6,7 @@
 """
 
 from __future__ import print_function
+import argparse
 import json
 import pymysql
 import requests
@@ -14,6 +15,11 @@ import sys
 # ----------------------------------------------------------------------
 def main():
     """main()"""
+
+    argp = argparse.ArgumentParser(description='get PubPeer comment info')
+    argp.add_argument('-p', dest='page', type=int)
+    args = argp.parse_args()
+    print(args)
 
     url_tmpl = (
         'http://api.pubpeer.com/v1/publications/dump/%s?'
@@ -30,9 +36,8 @@ def main():
 
     num_processed = 0
     num_bad = 0
-    page = 0
+    page = args.page or 1
     while True:
-        page += 1
         print('Getting page %s' % page)
 
         url = url_tmpl % page
@@ -68,6 +73,8 @@ def main():
                 pub['comments_count'],
                 'ok' if ret else 'bad'
             ))
+
+        page += 1
 
     pdb.close()
 
