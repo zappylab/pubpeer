@@ -6,7 +6,9 @@
 """
 
 from __future__ import print_function
+from datetime import datetime
 import argparse
+import itertools
 import json
 import pymysql
 import requests
@@ -19,7 +21,6 @@ def main():
     argp = argparse.ArgumentParser(description='get PubPeer comment info')
     argp.add_argument('-p', dest='page', type=int)
     args = argp.parse_args()
-    print(args)
 
     url_tmpl = (
         'http://api.pubpeer.com/v1/publications/dump/%s?'
@@ -34,9 +35,19 @@ def main():
         db='pubchase'
     )
 
+    cursor = pdb.cursor()
+    cursor.execute(
+        """
+        select UNIX_TIMESTAMP(max(last_modified)) from pubpeer_comments
+        """
+    );
+
+    last_mod = cursor.fetchone()[0]
+    last_run = datetime.fromtimestamp(last_mod) if last_mod else None;
     num_processed = 0
     num_bad = 0
     page = args.page or 1
+
     while True:
         print('Getting page %s' % page)
 
@@ -49,11 +60,20 @@ def main():
             continue
 
         pubs = data['publications']
-
-        # assume we've reached the highest page
         if len(pubs) == 0:
             print('No more publications, quitting.');
             break
+
+        latest_comment = max(map(
+            lambda x: x['date'],
+            list(itertools.chain( *map(lambda x: x['comments'], pubs)))
+        ))
+
+        if latest_comment and last_run:
+            max_date = datetime.fromtimestamp(int(latest_comment)) 
+            if max_date < last_run:
+                print('No new comments since %s, quitting.' % last_run)
+                break
 
         for pub in pubs:
             num_processed += 1
