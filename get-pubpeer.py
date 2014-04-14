@@ -64,13 +64,13 @@ def main():
             print('No more publications, quitting.');
             break
 
-        latest_comment = max(map(
+        earliest_comment = min(map(
             lambda x: x['date'],
             list(itertools.chain( *map(lambda x: x['comments'], pubs)))
         ))
 
-        if latest_comment and last_run:
-            max_date = datetime.fromtimestamp(int(latest_comment)) 
+        if earliest_comment and last_run:
+            max_date = datetime.fromtimestamp(int(earliest_comment)) 
             if max_date < last_run:
                 print('No new comments since %s, quitting.' % last_run)
                 break
