@@ -21,3 +21,14 @@ CREATE TABLE pubpeer_bad_doi (
   last_tried timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (pubpeer_bad_doi_id)
 ) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS pubpeer_comments_to_user;
+CREATE TABLE pubpeer_comments_to_user (
+  pubpeer_comments_to_user int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  pubpeer_comment_id int(10) unsigned NOT NULL,
+  user_id int(10) unsigned NOT NULL,
+  last_checked datetime,
+  comment_count int unsigned,
+  FOREIGN KEY (pubpeer_comment_id) references pubpeer_comments (pubpeer_comment_id),
+  FOREIGN KEY (user_id) references user (user_id)
+) ENGINE=InnoDB;
